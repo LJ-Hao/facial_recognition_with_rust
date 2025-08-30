@@ -33,7 +33,7 @@ A Rust-based facial recognition system that captures images every 10 seconds, re
 2. Install dependencies:
    ```bash
    # Ubuntu/Debian
-   sudo apt-get install libopencv-dev pkg-config libgtk-3-dev wget
+   sudo apt-get install libopencv-dev libopencv-contrib-dev pkg-config libgtk-3-dev wget
    
    # macOS
    brew install opencv
@@ -184,6 +184,41 @@ docker run -it --device=/dev/video0 \
   -e MONGODB_URI="mongodb://your-mongo-host:27017" \
   facial_recognition_system
 ```
+
+## Troubleshooting
+
+### OpenCV Build Issues
+
+If you encounter OpenCV build errors, try these solutions:
+
+1. **Install additional dependencies**:
+   ```bash
+   sudo apt-get install libopencv-contrib-dev
+   ```
+
+2. **Set environment variables**:
+   ```bash
+   export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4
+   export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig
+   ```
+
+3. **Clean and rebuild**:
+   ```bash
+   cargo clean
+   cargo build
+   ```
+
+### MongoDB Connection Issues
+
+1. **Check if MongoDB is running**:
+   ```bash
+   docker ps | grep mongodb
+   ```
+
+2. **Verify MongoDB connectivity**:
+   ```bash
+   mongosh mongodb://localhost:27017
+   ```
 
 ## CI/CD Pipeline
 

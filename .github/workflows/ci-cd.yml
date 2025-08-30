@@ -16,7 +16,7 @@ env:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
 
@@ -48,6 +48,11 @@ jobs:
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Set OpenCV environment variables
+        run: |
+          echo "OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig" >> $GITHUB_ENV
+
       - name: Build
         run: cargo build --verbose
 
@@ -66,7 +71,7 @@ jobs:
 
   docker-build:
     needs: build-and-test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@v3
@@ -104,7 +109,7 @@ jobs:
 
   release:
     needs: docker-build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     if: github.event_name == 'release'
     steps:
       - uses: actions/checkout@v3
@@ -128,6 +133,11 @@ jobs:
           toolchain: stable
           profile: minimal
           override: true
+
+      - name: Set OpenCV environment variables
+        run: |
+          echo "OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig" >> $GITHUB_ENV
 
       - name: Build release binary
         run: cargo build --release --target x86_64-unknown-linux-gnu
