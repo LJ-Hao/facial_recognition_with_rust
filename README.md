@@ -12,6 +12,8 @@ A Rust-based facial recognition system that captures images every 10 seconds, re
 - Does not store interval photos (every 10 seconds)
 - Docker support with MongoDB integration
 - CLI tool for managing authorized faces and viewing customer photos
+- HTTP API on port 8001 to return recognition results
+- Database monitoring for photo changes every minute
 
 ## Prerequisites
 
@@ -50,6 +52,22 @@ cargo build --release
 
 # Build the CLI tool
 cargo build --release --bin facial-recognition-cli
+```
+
+## Running Tests
+
+```bash
+# Run unit tests
+cargo test --lib
+
+# Run integration tests
+cargo test --test integration_test
+
+# Run all tests
+cargo test
+
+# Run tests with verbose output
+cargo test -- --nocapture
 ```
 
 ## Usage
@@ -96,6 +114,15 @@ The system will:
 5. Store customer photos in MongoDB (not interval photos)
 6. Save interval photos only temporarily for processing
 
+### HTTP API
+
+The system provides an HTTP API on port 8001:
+
+- `GET /health` - Health check endpoint
+- `GET /recognition` - Returns the latest recognition result:
+  - If recognized: `{"name": "User Name", "recognized": true}`
+  - If not recognized: `{"name": null, "recognized": false}`
+
 ## How Face Recognition Works
 
 This system uses a deep learning approach for facial recognition:
@@ -110,6 +137,13 @@ This system uses a deep learning approach for facial recognition:
 - **Authorized Faces**: Stored locally in JSON format with file paths
 - **Customer Photos**: Stored in MongoDB as binary data (name.png format)
 - **Interval Photos**: Not stored permanently (only used for recognition)
+
+## Database Monitoring
+
+The system monitors the `database` directory for changes every minute:
+- Detects new photos added to the database
+- Detects photos removed from the database
+- Automatically updates the internal database state
 
 ## Docker
 
@@ -167,12 +201,16 @@ This project uses GitHub Actions for continuous integration and deployment:
 │   ├── database.rs            # Face database management (local JSON)
 │   ├── photo_db.rs            # MongoDB photo storage
 │   ├── face_recognition.rs    # Deep learning face detection and recognition
+│   ├── monitor.rs             # Database monitoring and HTTP server
 │   └── bin/
 │       └── cli.rs             # CLI tool for face management
 ├── database/                  # Authorized face images and records
 ├── photos/                    # Temporary interval photos
+├── tests/                     # Integration tests
 └── .github/workflows/         # GitHub Actions workflows
-    └── ci-cd.yml              # CI/CD pipeline
+    ├── ci-cd.yml              # CI/CD pipeline
+    ├── tests.yml              # Test pipeline
+    └── docker_publish.yml     # Docker publish pipeline
 ```
 
 ## Development
