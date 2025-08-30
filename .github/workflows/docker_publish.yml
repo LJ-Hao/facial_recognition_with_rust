@@ -19,18 +19,22 @@ jobs:
   docker-publish:
     runs-on: ubuntu-latest
     steps:
+      # 1️⃣ Checkout 仓库
       - name: Checkout
         uses: actions/checkout@v3
 
+      # 2️⃣ 设置 Docker Buildx（支持 multi-arch）
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      # 3️⃣ 登录 Docker Hub
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.JIAHAOXYZ }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # 4️⃣ 提取版本号
       - name: Extract version tag
         id: meta
         run: |
@@ -40,8 +44,8 @@ jobs:
             echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
           else
             echo "VERSION=latest" >> $GITHUB_ENV
-          fi
 
+      # 5️⃣ 安装系统依赖（Rust + OpenCV 构建）
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -54,7 +58,8 @@ jobs:
             libopenblas-dev \
             liblapack-dev
 
-      - name: Build and push
+      # 6️⃣ 构建并推送 Docker 镜像（multi-arch）
+      - name: Build and push multi-arch Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -62,4 +67,4 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
             ${{ env.IMAGE_NAME }}:latest
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
