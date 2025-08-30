@@ -50,6 +50,8 @@ jobs:
       - name: Set OpenCV environment variables
         run: |
           echo "OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4" >> $GITHUB_ENV
+          echo "OPENCV_DISABLE_PROBES=true" >> $GITHUB_ENV
+          echo "OPENCV_VERSION=4.6.0" >> $GITHUB_ENV
 
       - name: Build
         run: cargo build --verbose
@@ -134,6 +136,8 @@ jobs:
       - name: Set OpenCV environment variables
         run: |
           echo "OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4" >> $GITHUB_ENV
+          echo "OPENCV_DISABLE_PROBES=true" >> $GITHUB_ENV
+          echo "OPENCV_VERSION=4.6.0" >> $GITHUB_ENV
 
       - name: Build release binary
         run: cargo build --release --target x86_64-unknown-linux-gnu
