@@ -5,7 +5,7 @@ edition = "2021"
 build = "build.rs"
 
 [dependencies]
-opencv = { version = "0.90" }
+opencv = { version = "0.88", features = ["rgb"] }
 image = "0.24"
 tokio = { version = "1.0", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -22,6 +22,9 @@ tokio-stream = "0.1"
 notify = "5.0"
 warp = "0.3"
 tokio-util = { version = "0.7", features = ["codec"] }
+
+[build-dependencies]
+pkg-config = "0.3"
 
 [[bin]]
 name = "facial-recognition-cli"

@@ -1,19 +1,43 @@
-use std::process::Command;
+use std::env;
+use std::fs;
+use std::path::Path;
 
 fn main() {
-    // Download Haar cascade file if it doesn't exist
-    if !std::path::Path::new("haarcascade_frontalface_alt.xml").exists() {
-        let output = Command::new("wget")
-            .arg("-O")
-            .arg("haarcascade_frontalface_alt.xml")
-            .arg("https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_alt.xml")
-            .output()
-            .expect("Failed to download Haar cascade file");
-            
-        if !output.status.success() {
-            panic!("Failed to download Haar cascade file: {}", String::from_utf8_lossy(&output.stderr));
+    // Print build information
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-env-changed=OPENCV_VERSION");
+    println!("cargo:rerun-if-env-changed=OPENCV_DISABLE_PROBES");
+    
+    // Try to find OpenCV installation
+    if let Ok(opencv_dir) = env::var("OpenCV_DIR") {
+        println!("cargo:rustc-link-search=native={}", opencv_dir);
+    }
+    
+    // Try to find OpenCV using pkg-config
+    if cfg!(target_os = "linux") {
+        // Try to find OpenCV using pkg-config
+        match pkg_config::probe_library("opencv4") {
+            Ok(_) => {
+                println!("Found OpenCV via pkg-config");
+            }
+            Err(_) => {
+                // Try alternative method
+                if let Ok(lib_dir) = env::var("LD_LIBRARY_PATH") {
+                    for path in lib_dir.split(":") {
+                        let opencv_lib_path = Path::new(path).join("libopencv_core.so");
+                        if opencv_lib_path.exists() {
+                            println!("cargo:rustc-link-search=native={}", path);
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
     
-    println!("cargo:rerun-if-changed=build.rs");
+    // Create directories if they don't exist
+    fs::create_dir_all("database").unwrap();
+    fs::create_dir_all("photos").unwrap();
+    
+    println!("Build script completed successfully");
 }

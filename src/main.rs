@@ -94,67 +94,51 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let faces = face_recognizer.detect_faces(&frame)?;
         
         if !faces.is_empty() {
+            // Save photo with timestamp (these are interval photos, not stored in DB)
+            let photo_name = format!("photos/{}.jpg", Utc::now().timestamp());
+            save_frame(&frame, &photo_name)?;
+            
             // Try to recognize face
-            if let Ok(is_recognized) = recognize_face(&frame, &faces, &face_db, &face_recognizer)? {
-                if is_recognized {
-                    // Get the recognized name
-                    let recognized_name = {
-                        if let Some(first_face) = face_db.get_authorized_faces().first() {
-                            Some(first_face.name.clone())
-                        } else {
-                            None
-                        }
-                    };
-                    
-                    // Update last recognition result
-                    {
-                        let mut result = last_result.write().await;
-                        result.name = recognized_name.clone();
-                        result.recognized = true;
-                    }
-                    
-                    // Convert frame to bytes for MongoDB storage
-                    let photo_bytes = mat_to_png_bytes(&frame)?;
-                    
-                    // Save customer photo to MongoDB (not to file system)
-                    if let Some(name) = &recognized_name {
-                        let customer_photo = CustomerPhoto::new(
-                            name.clone(),
-                            photo_bytes
-                        );
-                        
-                        if let Err(e) = photo_db.save_customer_photo(customer_photo).await {
-                            eprintln!("Failed to save customer photo to MongoDB: {}", e);
-                        } else {
-                            println!("Customer photo saved to MongoDB for {}", name);
-                        }
-                    }
-                    
-                    println!("Recognized user - Unlocking screen");
-                    unlock_screen()?;
+            if recognize_face(&frame, &faces, &face_db, &face_recognizer)? {
+                println!("Recognized user - Unlocking screen");
+                unlock_screen()?;
+                
+                // Update last recognition result
+                {
+                    let mut result = last_result.write().await;
+                    result.name = Some("Authorized User".to_string()); // In a real implementation, this would be the actual user name
+                    result.recognized = true;
+                }
+                
+                // Save customer photo to MongoDB (not interval photos)
+                let photo_bytes = mat_to_jpg_bytes(&frame)?;
+                let customer_photo = CustomerPhoto::new("Authorized User".to_string(), photo_bytes);
+                if let Err(e) = photo_db.save_customer_photo(customer_photo).await {
+                    eprintln!("Failed to save customer photo to MongoDB: {}", e);
                 } else {
-                    // Update last recognition result
-                    {
-                        let mut result = last_result.write().await;
-                        result.name = None;
-                        result.recognized = false;
-                    }
-                    
-                    println!("Unknown face detected - Locking screen");
-                    lock_screen()?;
+                    println!("Customer photo saved to MongoDB");
+                }
+            } else {
+                println!("Unknown face detected - Locking screen");
+                lock_screen()?;
+                
+                // Update last recognition result
+                {
+                    let mut result = last_result.write().await;
+                    result.name = None;
+                    result.recognized = false;
                 }
             }
         }
         
-        // Wait 10 seconds before next capture (these photos are NOT saved to MongoDB)
+        // Wait 10 seconds before next capture
         thread::sleep(Duration::from_secs(10));
     }
 }
 
-fn mat_to_png_bytes(mat: &Mat) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    // Convert Mat to PNG bytes
+fn mat_to_jpg_bytes(mat: &Mat) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let mut buffer = Vector::<u8>::new();
-    imencode(".png", mat, &mut buffer, &Vector::new())?;
+    imencode(".jpg", mat, &mut buffer, &Vector::new())?;
     Ok(buffer.to_vec())
 }
 
