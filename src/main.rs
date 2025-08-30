@@ -10,15 +10,19 @@ use std::thread;
 use std::time::Duration;
 use chrono::Utc;
 use tokio;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 // Import our modules
 mod database;
 mod face_recognition;
 mod photo_db;
+mod monitor;
 
 use database::FaceDatabase;
 use face_recognition::DeepFaceRecognizer;
 use photo_db::{PhotoDatabase, CustomerPhoto};
+use monitor::{DatabaseMonitor, RecognitionResponse};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -29,11 +33,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize face database
     let face_db = FaceDatabase::new()?;
     
+    // Initialize database monitor
+    let db_monitor = DatabaseMonitor::new(face_db)?;
+    let db_monitor = Arc::new(RwLock::new(db_monitor));
+    
     // Initialize photo database (MongoDB)
     let photo_db = PhotoDatabase::new().await?;
     
     // Initialize deep face recognizer
     let face_recognizer = DeepFaceRecognizer::new()?;
+    
+    // Start database monitoring task
+    let monitor_clone = db_monitor.clone();
+    tokio::spawn(async move {
+        if let Err(e) = monitor::start_database_monitor(monitor_clone).await {
+            eprintln!("Database monitoring error: {}", e);
+        }
+    });
+    
+    // Keep track of the last recognition result for HTTP responses
+    let last_result = Arc::new(RwLock::new(RecognitionResponse {
+        name: None,
+        recognized: false,
+    }));
+    
+    // Start HTTP server
+    let result_clone = last_result.clone();
+    tokio::spawn(async move {
+        if let Err(e) = monitor::start_http_server(result_clone).await {
+            eprintln!("HTTP server error: {}", e);
+        }
+    });
     
     // Initialize camera
     let mut cam = VideoCapture::new(0, VideoCaptureAPIs::CAP_ANY)?; // Open default camera
@@ -42,6 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     
     println!("Facial Recognition System Started with MongoDB Photo Storage");
+    println!("HTTP server running on http://localhost:8001");
     
     loop {
         // Capture frame
@@ -53,35 +84,62 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         }
         
+        // Get current face database from monitor
+        let face_db = {
+            let monitor = db_monitor.read().await;
+            monitor.get_face_database().clone()
+        };
+        
         // Detect faces using deep learning approach
         let faces = face_recognizer.detect_faces(&frame)?;
         
         if !faces.is_empty() {
-            // For customer photos (not the 10-second interval photos), save to MongoDB
-            // Only save customer photos when a recognized user is detected
+            // Try to recognize face
             if let Ok(is_recognized) = recognize_face(&frame, &faces, &face_db, &face_recognizer)? {
                 if is_recognized {
+                    // Get the recognized name
+                    let recognized_name = {
+                        if let Some(first_face) = face_db.get_authorized_faces().first() {
+                            Some(first_face.name.clone())
+                        } else {
+                            None
+                        }
+                    };
+                    
+                    // Update last recognition result
+                    {
+                        let mut result = last_result.write().await;
+                        result.name = recognized_name.clone();
+                        result.recognized = true;
+                    }
+                    
                     // Convert frame to bytes for MongoDB storage
                     let photo_bytes = mat_to_png_bytes(&frame)?;
                     
                     // Save customer photo to MongoDB (not to file system)
-                    // We'll use the first authorized face name for this example
-                    if let Some(first_face) = face_db.get_authorized_faces().first() {
+                    if let Some(name) = &recognized_name {
                         let customer_photo = CustomerPhoto::new(
-                            first_face.name.clone(),
+                            name.clone(),
                             photo_bytes
                         );
                         
                         if let Err(e) = photo_db.save_customer_photo(customer_photo).await {
                             eprintln!("Failed to save customer photo to MongoDB: {}", e);
                         } else {
-                            println!("Customer photo saved to MongoDB for {}", first_face.name);
+                            println!("Customer photo saved to MongoDB for {}", name);
                         }
                     }
                     
                     println!("Recognized user - Unlocking screen");
                     unlock_screen()?;
                 } else {
+                    // Update last recognition result
+                    {
+                        let mut result = last_result.write().await;
+                        result.name = None;
+                        result.recognized = false;
+                    }
+                    
                     println!("Unknown face detected - Locking screen");
                     lock_screen()?;
                 }
