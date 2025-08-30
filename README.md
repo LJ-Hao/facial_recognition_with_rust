@@ -1,19 +1,17 @@
 # Facial Recognition System
 
-A Rust-based facial recognition system that captures images every 10 seconds, recognizes faces using deep learning techniques, and controls screen lock/unlock based on authorized users. Customer photos are stored in MongoDB database in name.png format, while interval photos are not stored.
+A Rust-based facial recognition system that captures images every 10 seconds, recognizes faces using deep learning techniques, and controls screen lock/unlock based on authorized users. Customer photos are stored in MongoDB database in name.jpg format, while interval photos are not stored.
 
 ## Features
 
 - Captures photos every 10 seconds using connected camera
 - Recognizes faces using deep learning techniques (feature extraction and comparison)
-- Locks screen for unknown faces
-- Unlocks screen for recognized (authorized) faces
-- Stores customer photos in MongoDB database (name.png format)
+- Stores customer photos in MongoDB database (name.jpg format)
 - Does not store interval photos (every 10 seconds)
 - Docker support with MongoDB integration
 - CLI tool for managing authorized faces and viewing customer photos
 - HTTP API on port 8001 to return recognition results
-- Database monitoring for photo changes every minute
+- Database monitoring for photo changes every minute in `database` folder
 
 ## Prerequisites
 
@@ -95,8 +93,8 @@ cargo test -- --nocapture
 Before running the facial recognition system, you need to add authorized faces to the database:
 
 ```bash
-# Add a new authorized face
-./target/release/facial-recognition-cli add --name "John Doe" --photo "database/john.png"
+# Add a new authorized face (photo must be in database folder with .jpg extension)
+./target/release/facial-recognition-cli add --name "John Doe" --photo "database/john.jpg"
 
 # List all authorized faces
 ./target/release/facial-recognition-cli list
@@ -153,13 +151,13 @@ This system uses a deep learning approach for facial recognition:
 ## Database Storage
 
 - **Authorized Faces**: Stored locally in JSON format with file paths
-- **Customer Photos**: Stored in MongoDB as binary data (name.png format)
+- **Customer Photos**: Stored in MongoDB as binary data (name.jpg format)
 - **Interval Photos**: Not stored permanently (only used for recognition)
 
 ## Database Monitoring
 
 The system monitors the `database` directory for changes every minute:
-- Detects new photos added to the database
+- Detects new photos added to the database (only .jpg and .jpeg files)
 - Detects photos removed from the database
 - Automatically updates the internal database state
 

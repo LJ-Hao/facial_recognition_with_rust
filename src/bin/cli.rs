@@ -19,7 +19,7 @@ enum Commands {
         #[clap(short, long)]
         name: String,
         
-        /// Path to the photo
+        /// Path to the photo (should be in database folder with .jpg extension)
         #[clap(short, long)]
         photo: String,
     },
@@ -51,13 +51,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     // Create database directory if it doesn't exist
     fs::create_dir_all("database")?;
-    fs::create_dir_all("dnn_models")?;
     
     match &cli.command {
         Commands::Add { name, photo } => {
             // Verify photo exists
             if !std::path::Path::new(photo).exists() {
                 eprintln!("Error: Photo file '{}' not found", photo);
+                std::process::exit(1);
+            }
+            
+            // Verify photo has .jpg extension
+            if !photo.to_lowercase().ends_with(".jpg") && !photo.to_lowercase().ends_with(".jpeg") {
+                eprintln!("Error: Photo file must have .jpg or .jpeg extension");
                 std::process::exit(1);
             }
             
