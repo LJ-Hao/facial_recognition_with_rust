@@ -5,7 +5,7 @@ edition = "2021"
 build = "build.rs"
 
 [dependencies]
-opencv = { version = "0.90", features = ["opencv-4", "rgb"] } # 修改这里，移除 contrib
+opencv = "0.90"
 image = "0.24"
 tokio = { version = "1.0", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
