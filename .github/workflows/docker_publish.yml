@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # 1️⃣ Checkout 仓库
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v3
 
       # 2️⃣ 设置 Docker Buildx（支持 multi-arch）
@@ -31,8 +31,8 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.JIAHAOXYZ }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.JIAHAOXYZ }}         # Docker Hub 用户名
+          password: ${{ secrets.DOCKERHUB_TOKEN }}  # Docker Hub Access Token
 
       # 4️⃣ 提取版本号
       - name: Extract version tag
@@ -68,3 +68,7 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
             ${{ env.IMAGE_NAME }}:latest
           platforms: linux/amd64,linux/arm64
+
+      # 7️⃣ 可选：打印镜像信息
+      - name: List Docker images
+        run: docker images
