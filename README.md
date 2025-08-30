@@ -44,6 +44,24 @@ A Rust-based facial recognition system that captures images every 10 seconds, re
    - Use a cloud MongoDB service (MongoDB Atlas), or
    - Use Docker Compose (see below)
 
+## MongoDB Setup
+
+### Using Local MongoDB
+
+1. Start MongoDB locally:
+   ```bash
+   docker run --name mongodb-local -d -p 27017:27017 mongo
+   ```
+
+2. The application will automatically connect to MongoDB at `mongodb://localhost:27017`
+
+### Using Custom MongoDB URI
+
+Set the `MONGODB_URI` environment variable:
+```bash
+export MONGODB_URI="mongodb://your-mongo-host:27017"
+```
+
 ## Building the Project
 
 ```bash
@@ -99,7 +117,7 @@ Before running the facial recognition system, you need to add authorized faces t
 ### Running the Facial Recognition System
 
 ```bash
-# Run the main application (requires MongoDB)
+# Run the main application (connects to local MongoDB by default)
 cargo run --release
 
 # Or with custom MongoDB URI
