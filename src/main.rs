@@ -90,7 +90,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             monitor.get_face_database().clone()
         };
         
-        // Detect faces using deep learning approach
+        // Step 1: Face Detection - Detect faces in the frame
         let faces = face_recognizer.detect_faces(&frame)?;
         
         if !faces.is_empty() {
@@ -98,8 +98,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let photo_name = format!("photos/{}.jpg", Utc::now().timestamp());
             save_frame(&frame, &photo_name)?;
             
-            // Try to recognize face
-            if recognize_face(&frame, &faces, &face_db, &face_recognizer)? {
+            // Step 2: Face Recognition - Recognize detected faces
+        if recognize_face(&frame, &faces, &face_db)? {
                 println!("Recognized user - Unlocking screen");
                 unlock_screen()?;
                 
@@ -147,11 +147,12 @@ fn save_frame(frame: &Mat, filename: &str) -> Result<(), Box<dyn std::error::Err
     Ok(())
 }
 
+/// Recognize faces in a frame using the provided face database
+/// This function performs face recognition on already detected faces
 fn recognize_face(
     frame: &Mat, 
     faces: &[Rect], 
-    face_db: &FaceDatabase, 
-    face_recognizer: &DeepFaceRecognizer
+    face_db: &FaceDatabase
 ) -> Result<bool, Box<dyn std::error::Error>> {
     let authorized_faces = face_db.get_authorized_faces();
     
@@ -162,10 +163,10 @@ fn recognize_face(
     
     // For each detected face, compare with authorized faces
     for face_rect in faces {
-        // Extract face region
+        // Extract face region from the frame using the bounding box
         let face_mat = Mat::roi(frame, *face_rect)?;
         
-        // Extract features for detected face
+        // Extract features for detected face (face recognition step)
         let detected_features = face_recognizer.extract_features(&face_mat)?;
         
         // Compare with each authorized face
@@ -174,10 +175,10 @@ fn recognize_face(
             if std::path::Path::new(&record.photo_path).exists() {
                 let authorized_face = imread(&record.photo_path, IMREAD_COLOR)?;
                 
-                // Extract features for authorized face
+                // Extract features for authorized face (face recognition step)
                 let authorized_features = face_recognizer.extract_features(&authorized_face)?;
                 
-                // Compare features
+                // Compare features using cosine similarity
                 let similarity = face_recognizer.compare_faces(&detected_features, &authorized_features);
                 
                 // If similarity is above threshold, we have a match

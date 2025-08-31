@@ -1,12 +1,11 @@
 /// A simplified OpenCV wrapper to avoid DNN module issues
 /// This module provides only the essential OpenCV functionality needed for face detection
 use opencv::{
-    core::*,
-    imgcodecs::*,
-    objdetect::*,
-    prelude::*,
-    imgproc::*,
-    types::*,
+    core::{Mat, Rect, Size, Vector, cvt_color, equalize_hist, ColorConversionCodes},
+    imgcodecs::{imwrite, imencode},
+    objdetect::CascadeClassifier,
+    imgproc::{resize, InterpolationFlags},
+    types::VectorOfRect,
 };
 use std::fs;
 use std::path::Path;
@@ -26,7 +25,11 @@ impl SimpleFaceDetector {
         // Download cascade file if it doesn't exist
         if !Path::new(face_cascade_path).exists() {
             let url = "https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_alt.xml";
-            Self::download_file(face_cascade_path, url)?;
+            // Create a dummy instance to call the method
+            let detector = SimpleFaceDetector {
+                face_cascade: CascadeClassifier::default()?,
+            };
+            detector.download_file(face_cascade_path, url)?;
         }
         
         let face_cascade = CascadeClassifier::new(face_cascade_path)?;
@@ -36,7 +39,7 @@ impl SimpleFaceDetector {
     
     pub fn detect_faces(&self, frame: &Mat) -> Result<Vec<Rect>, Box<dyn std::error::Error>> {
         let mut gray = Mat::default();
-        cvt_color(frame, &mut gray, ColorConversionCodes::COLOR_BGR2GRAY, 0)?;
+        cvt_color(frame, &mut gray, ColorConversionCodes::COLOR_BGR2GRAY as i32, 0)?;
         equalize_hist(&gray, &mut gray)?;
         
         let mut faces = VectorOfRect::new();
@@ -77,7 +80,7 @@ pub fn mat_to_jpg_bytes(mat: &Mat) -> Result<Vec<u8>, Box<dyn std::error::Error>
 }
 
 pub fn save_frame(frame: &Mat, filename: &str) -> Result<(), Box<dyn std::error::Error>> {
-    imwrite(filename, frame, &Vector::default())?;
+    imwrite(filename, frame, &Vector::new())?;
     Ok(())
 }
 

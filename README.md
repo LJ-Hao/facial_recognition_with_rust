@@ -93,14 +93,17 @@ cargo test -- --nocapture
 Before running the facial recognition system, you need to add authorized faces to the database:
 
 ```bash
-# Add a new authorized face (photo must be in database folder with .jpg extension)
-./target/release/facial-recognition-cli add --name "John Doe" --photo "database/john.jpg"
+# Add a new authorized face (photo will be copied to database folder automatically)
+./target/release/facial-recognition-cli add --name "John Doe" --photo "/path/to/john.jpg"
 
 # List all authorized faces
 ./target/release/facial-recognition-cli list
 
 # Remove an authorized face
 ./target/release/facial-recognition-cli remove --id <face-id>
+
+# Clear all authorized faces
+./target/release/facial-recognition-cli clear
 
 # Train the model (uses pre-trained approaches)
 ./target/release/facial-recognition-cli train
@@ -110,6 +113,9 @@ Before running the facial recognition system, you need to add authorized faces t
 
 # List photos for a specific customer
 ./target/release/facial-recognition-cli list-photos --name "John Doe"
+
+# Check system status
+./target/release/facial-recognition-cli status
 ```
 
 ### Running the Facial Recognition System
@@ -141,12 +147,17 @@ The system provides an HTTP API on port 8001:
 
 ## How Face Recognition Works
 
-This system uses a deep learning approach for facial recognition:
+This system uses a two-step approach for facial recognition:
 
-1. **Face Detection**: Uses Haar Cascade Classifier to detect faces in images
-2. **Feature Extraction**: Extracts facial features using histogram-based techniques
-3. **Face Comparison**: Compares facial features using cosine similarity
-4. **Recognition Decision**: Determines if a face matches authorized users based on similarity threshold
+1. **Face Detection**: Uses Haar Cascade Classifier to detect faces in images (OpenCV is used for preprocessing only)
+2. **Face Recognition**: Extracts facial features using histogram-based techniques and compares them using cosine similarity
+3. **Decision Making**: Determines if a face matches authorized users based on similarity threshold
+
+The process is clearly separated:
+- **Step 1 (Face Detection)**: Identify bounding boxes of faces in the image
+- **Step 2 (Face Recognition)**: Extract features from detected face regions and compare with authorized faces
+
+OpenCV is used only for image preprocessing (converting to grayscale, resizing) and postprocessing (drawing bounding boxes), not for the core recognition algorithm.
 
 ## Database Storage
 
@@ -251,10 +262,10 @@ This project uses GitHub Actions for continuous integration and deployment:
 │   ├── lib.rs                 # Library module exports
 │   ├── database.rs            # Face database management (local JSON)
 │   ├── photo_db.rs            # MongoDB photo storage
-│   ├── face_recognition.rs    # Deep learning face detection and recognition
+│   ├── face_recognition.rs    # Face detection and recognition (OpenCV for preprocessing only)
 │   ├── monitor.rs             # Database monitoring and HTTP server
 │   └── bin/
-│       └── cli.rs             # CLI tool for face management
+│       └── cli.rs             # Enhanced CLI tool for face management
 ├── database/                  # Authorized face images and records
 ├── photos/                    # Temporary interval photos
 ├── tests/                     # Integration tests
