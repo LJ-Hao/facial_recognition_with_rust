@@ -17,6 +17,11 @@ env:
 jobs:
   build-and-test:
     runs-on: ubuntu-20.04
+    services:
+      mongodb:
+        image: mongo:4.4
+        ports:
+          - 27017:27017
     steps:
       - uses: actions/checkout@v3
 
@@ -53,11 +58,20 @@ jobs:
           echo "OPENCV_DISABLE_PROBES=true" >> $GITHUB_ENV
           echo "OPENCV_VERSION=4.6.0" >> $GITHUB_ENV
 
+      - name: Wait for MongoDB to be ready
+        run: |
+          until docker exec $(docker ps -q) mongosh --eval "print(\"waited for connection\")"
+          do
+              sleep 2
+          done
+
       - name: Build
         run: cargo build --verbose
 
       - name: Run tests
         run: cargo test --verbose
+        env:
+          MONGODB_URI: mongodb://localhost:27017
 
       - name: Run Clippy
         run: |

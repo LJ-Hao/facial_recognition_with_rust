@@ -12,6 +12,11 @@ env:
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:4.4
+        ports:
+          - 27017:27017
     
     steps:
     - uses: actions/checkout@v3
@@ -42,15 +47,31 @@ jobs:
           ~/.cargo/registry
           ~/.cargo/git
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Wait for MongoDB to be ready
+      run: |
+        until docker exec $(docker ps -q) mongosh --eval "print(\"waited for connection\")"
+        do
+            sleep 2
+        done
     
     - name: Run unit tests
       run: cargo test --lib --verbose
+      env:
+        MONGODB_URI: mongodb://localhost:27017
       
     - name: Run integration tests
       run: cargo test --test integration_test --verbose
+      env:
+        MONGODB_URI: mongodb://localhost:27017
 
   build-and-test:
     runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:4.4
+        ports:
+          - 27017:27017
     
     steps:
     - uses: actions/checkout@v3
@@ -81,12 +102,21 @@ jobs:
           ~/.cargo/registry
           ~/.cargo/git
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Wait for MongoDB to be ready
+      run: |
+        until docker exec $(docker ps -q) mongosh --eval "print(\"waited for connection\")"
+        do
+            sleep 2
+        done
     
     - name: Build
       run: cargo build --verbose
     
     - name: Run all tests
       run: cargo test --verbose
+      env:
+        MONGODB_URI: mongodb://localhost:27017
       
     - name: Run Clippy
       run: |
