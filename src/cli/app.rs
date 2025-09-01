@@ -11,4 +11,8 @@ pub struct Cli {
     /// Path to the output image (optional)
     #[clap(short, long, value_parser)]
     pub output: Option<String>,
+
+    /// Path to the database directory containing reference images
+    #[clap(short = 'd', long, value_parser, default_value = "database")]
+    pub database: String,
 }

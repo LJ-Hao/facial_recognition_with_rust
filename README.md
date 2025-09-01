@@ -6,6 +6,7 @@ This project is a facial recognition system implemented in Rust. It provides a r
 
 - Face detection in images
 - Face recognition and matching
+- Database of known faces for identification
 - High-performance implementation using Rust
 - Docker support for easy deployment
 - CI/CD pipeline for automated testing and deployment
@@ -29,7 +30,8 @@ src/
 │   └── helpers.rs          # Helper functions used across the crate
 └── cli/
     ├── mod.rs              # CLI module declaration
-    └── app.rs              # CLI application setup and argument parsing
+    ├── app.rs              # CLI application setup and argument parsing
+    └── database.rs         # Database functionality for face recognition
 ```
 
 ## Getting Started
@@ -38,6 +40,15 @@ src/
 
 - Rust (latest stable version)
 - Cargo (Rust's package manager and build tool)
+
+### Setting up the Database
+
+Create a `database` directory in the project root and place reference images in it with the naming convention `name.jpg`:
+
+```bash
+mkdir database
+cp /path/to/reference/images/*.jpg database/
+```
 
 ### Building the Project
 
@@ -72,7 +83,7 @@ cargo run -- [arguments]
 For example:
 
 ```bash
-cargo run -- --input path/to/image.jpg
+cargo run -- --input path/to/image.jpg --database path/to/database
 ```
 
 ### Using Docker
@@ -86,7 +97,7 @@ docker build -t facial_recognition .
 To run the application in a Docker container, use:
 
 ```bash
-docker run --rm -v /path/to/images:/images facial_recognition --input /images/input.jpg
+docker run --rm -v /path/to/images:/images -v /path/to/database:/database facial_recognition --input /images/input.jpg --database /database
 ```
 
 ## CI/CD
