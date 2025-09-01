@@ -1,31 +1,25 @@
 [package]
-name = "facial_recognition_system"
+name = "facial_recognition"
 version = "0.1.0"
 edition = "2021"
-build = "build.rs"
 
 [dependencies]
-opencv = { version = "0.88", default-features = false, features = ["rgb", "imgproc", "imgcodecs", "videoio", "objdetect", "highgui"] }
+# For image processing
 image = "0.24"
-tokio = { version = "1.0", features = ["full"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-uuid = { version = "1.0", features = ["v4"] }
-dirs = "5.0"
-chrono = { version = "0.4", features = ["serde"] }
-clap = { version = "4.0", features = ["derive"] }
+# For linear algebra operations, useful in ML
 ndarray = "0.15"
-reqwest = { version = "0.11", features = ["blocking"] }
-futures = "0.3"
-tokio-stream = "0.1"
-notify = "5.0"
-warp = "0.3"
-tokio-util = { version = "0.7", features = ["codec"] }
-rusqlite = { version = "0.28", features = ["bundled"] }
+# For neural network inference (e.g., ONNX models)
+# tract = "0.17"
 
-[build-dependencies]
-pkg-config = "0.3"
+# For command-line argument parsing
+clap = { version = "4.0", features = ["derive"] }
 
-[[bin]]
-name = "facial-recognition-cli"
-path = "src/bin/cli.rs"
+# For async operations if needed (e.g., web API)
+# tokio = { version = "1.0", features = ["full"] }
+
+# For logging
+log = "0.4"
+env_logger = "0.10"
+
+[dev-dependencies]
+tempfile = "3.2"

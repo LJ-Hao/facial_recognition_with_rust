@@ -1,0 +1,17 @@
+src/
+├── main.rs
+├── lib.rs
+├── models/
+│   ├── mod.rs
+│   ├── face.rs
+│   └── detection.rs
+├── processors/
+│   ├── mod.rs
+│   ├── image_loader.rs
+│   └── face_detector.rs
+├── utils/
+│   ├── mod.rs
+│   └── helpers.rs
+└── cli/
+    ├── mod.rs
+    └── app.rs
