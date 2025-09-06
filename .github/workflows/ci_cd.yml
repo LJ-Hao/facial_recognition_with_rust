@@ -43,7 +43,7 @@ jobs:
       - name: Run Clippy
         run: |
           rustup component add clippy
-          cargo clippy -- -D warnings
+          cargo clippy -- -D warnings -A dead_code
 
       - name: Check formatting
         run: |

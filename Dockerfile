@@ -1,5 +1,5 @@
 # Use an official Rust base image
-FROM rust:1.81 as builder
+FROM rust:1.81 AS builder
 
 # Set the working directory
 WORKDIR /usr/src/facial_recognition

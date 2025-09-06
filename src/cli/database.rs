@@ -30,7 +30,7 @@ pub fn load_database(database_path: &str) -> Result<Vec<Person>, Box<dyn std::er
         let path = entry.path();
 
         // Only process files with .jpg extension
-        if path.is_file() && path.extension().map_or(false, |ext| ext == "jpg") {
+        if path.is_file() && path.extension().is_some_and(|ext| ext == "jpg") {
             if let Some(file_name) = path.file_stem() {
                 let name = file_name.to_string_lossy().to_string();
                 let image_path = path.to_string_lossy().to_string();
