@@ -1,5 +1,11 @@
 # Use an official Rust base image
-FROM rust:1.81 AS builder
+FROM --platform=$BUILDPLATFORM rust:1.83 AS builder
+
+# Install cross-compilation tools
+RUN apt-get update && apt-get install -y \
+    gcc-aarch64-linux-gnu \
+    libc6-dev-arm64-cross \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
 WORKDIR /usr/src/facial_recognition
@@ -18,11 +24,14 @@ RUN rm src/*.rs
 # Copy the source code
 COPY src ./src
 
-# Build the application
-RUN cargo build --release
+# Build the application for the target platform
+RUN case $TARGETPLATFORM in \
+    "linux/amd64") cargo build --release ;; \
+    "linux/arm64") cargo build --release --target aarch64-unknown-linux-gnu ;; \
+    esac
 
 # Use a minimal base image for the runtime
-FROM debian:bookworm-slim
+FROM --platform=$TARGETPLATFORM debian:bookworm-slim
 
 # Install ca-certificates for HTTPS requests (if needed in the future)
 RUN apt-get update && apt-get install -y \
@@ -33,7 +42,10 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir /database
 
 # Copy the binary from the builder stage
-COPY --from=builder /usr/src/facial_recognition/target/release/facial_recognition /usr/local/bin/facial_recognition
+RUN case $TARGETPLATFORM in \
+    "linux/amd64") cp /usr/src/facial_recognition/target/release/facial_recognition /usr/local/bin/facial_recognition ;; \
+    "linux/arm64") cp /usr/src/facial_recognition/target/aarch64-unknown-linux-gnu/release/facial_recognition /usr/local/bin/facial_recognition ;; \
+    esac
 
 # Command to run the application
 ENTRYPOINT ["facial_recognition"]
